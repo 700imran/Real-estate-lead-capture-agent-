@@ -1,0 +1,355 @@
+```react
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Building, MapPin, Phone, Mail, MessageSquare, X, ChevronRight, 
+  Star, Clock, CheckCircle, ArrowRight, LayoutDashboard, Users, 
+  Settings, Bell, Activity, Filter, Search, BarChart3, ShieldCheck,
+  Calendar, Zap, TrendingUp, Smartphone, Send
+} from 'lucide-react';
+
+// --- MOCK DATA GENERATION ---
+
+const generateProjects = () => {
+  const types = ['Luxury Villa', 'Penthouse', 'Premium Apartment', 'Estate'];
+  const statuses = ['Under Construction', 'Ready to Move', 'Pre-Launch'];
+  const locations = ['Banjara Hills', 'Jubilee Hills', 'Financial District', 'Hitec City', 'Kondapur', 'Gachibowli', 'Neopolis'];
+  const amenities = ['Infinity Pool', 'Private Elevator', 'Smart Home', 'Clubhouse', 'Spa', 'Helipad', 'Concierge', 'Golf Course'];
+  
+  const baseNames = ['The Aurelia', 'Crown', 'Oasis', 'Lumina', 'Vertex', 'Solitaire', 'The Reserve', 'Celestia', 'Meridian', 'Elysium', 'Aria', 'Zenith', 'Nova', 'Pinnacle', 'Serenata'];
+  
+  return baseNames.map((name, i) => {
+    const type = types[i % types.length];
+    return {
+      id: `proj-${i + 1}`,
+      name: `${name} ${type.includes('Villa') ? 'Estates' : 'Residences'}`,
+      type: type,
+      price: `₹${(Math.random() * 10 + 2).toFixed(1)} Cr - ₹${(Math.random() * 15 + 12).toFixed(1)} Cr`,
+      location: locations[i % locations.length],
+      status: statuses[i % statuses.length],
+      beds: `${Math.floor(Math.random() * 3) + 3} & ${Math.floor(Math.random() * 3) + 4} BHK`,
+      sqft: `${Math.floor(Math.random() * 3000) + 2500} - ${Math.floor(Math.random() * 5000) + 6000} Sq.Ft.`,
+      image: `https://images.unsplash.com/photo-${[
+        '1600596542815-ffad4c1539a9', '1512917774080-9991f1c4c750', '1613490453576-6997428f5229',
+        '1600607687939-ce8a6c25118c', '1600585154340-be6161a56a0c', '1512917774080-9991f1c4c750',
+        '1600596542815-ffad4c1539a9', '1613490453576-6997428f5229', '1600607687939-ce8a6c25118c'
+      ][i % 9]}?auto=format&fit=crop&w=800&q=80`,
+      amenities: [amenities[i % amenities.length], amenities[(i + 1) % amenities.length], amenities[(i + 2) % amenities.length]],
+      description: `Experience unparalleled luxury at ${name}. Designed for the elite, offering breathtaking views and world-class amenities in the heart of the city.`,
+      builder: i % 2 === 0 ? 'Prestige Group' : 'Lodha Developers'
+    };
+  });
+};
+
+const mockProjects = generateProjects();
+
+const mockLeads = [
+  { id: 'L-101', name: 'Vikram Desai', phone: '+91 98765 43210', email: 'vikram.d@email.com', intent: 'High', score: 92, project: 'The Aurelia Residences', budget: '₹5-7 Cr', timeline: 'Immediate', status: 'Meeting Booked', aiSummary: 'User explored 3 properties. High interest in 4BHK. Ready to move. Booked site visit for Saturday via AI assistant.', lastActive: '2 mins ago' },
+  { id: 'L-102', name: 'Ananya Sharma', phone: '+91 91234 56789', email: 'ananya.s@email.com', intent: 'Medium', score: 65, project: 'Crown Estates', budget: '₹3-4 Cr', timeline: '3-6 Months', status: 'Qualified', aiSummary: 'Asked about ROI and rental yield. Family of 4. Needs near International School. Transferred to WhatsApp channel.', lastActive: '1 hr ago' },
+  { id: 'L-103', name: 'Rajiv Menon', phone: '+91 99988 77766', email: 'rajiv.invest@email.com', intent: 'High', score: 88, project: 'Oasis Residences', budget: '₹10+ Cr', timeline: 'Flexible', status: 'Hot Lead', aiSummary: 'NRI investor. Looking for premium penthouse. Discussed payment plans with AI. Scheduled zoom call.', lastActive: '3 hrs ago' },
+  { id: 'L-104', name: 'Priya Verma', phone: 'Hidden', email: 'Hidden', intent: 'Low', score: 24, project: 'Lumina Residences', budget: 'Unknown', timeline: 'Exploring', status: 'Nurturing', aiSummary: 'Browsed gallery for 5 mins. Asked AI about possession date. Did not share contact info. Retargeting active.', lastActive: '1 day ago' },
+  { id: 'L-105', name: 'Karan Patel', phone: '+91 98888 11111', email: 'k.patel@email.com', intent: 'High', score: 95, project: 'Vertex Estates', budget: '₹8-10 Cr', timeline: 'Immediate', status: 'Negotiation', aiSummary: 'Repeat visitor (4th time). Spent 20 mins on pricing page. AI answered Vastu queries. Requested call back.', lastActive: '15 mins ago' },
+];
+
+const mockAnalytics = {
+  activeVisitors: 42,
+  aiConversations: 128,
+  qualifiedLeads: 35,
+  appointmentsBooked: 12,
+  conversionRate: '27.3%'
+};
+
+// --- COMPONENTS ---
+
+// 1. BUYER VIEW (The Front-End Real Estate Site)
+const BuyerView = ({ onOpenProject, setLeadScore }) => {
+  return (
+    <div className="min-h-screen bg-[#fafafa] font-sans text-gray-900 selection:bg-[#D4AF37] selection:text-white">
+      {/* Navigation */}
+      <nav className="fixed w-full bg-white/90 backdrop-blur-md z-40 border-b border-gray-100 transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Building className="text-[#D4AF37] w-8 h-8" />
+            <span className="text-2xl font-bold tracking-tight">ESTATE<span className="text-[#D4AF37]">FLOW</span></span>
+          </div>
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium tracking-wide">
+            <a href="#" className="hover:text-[#D4AF37] transition-colors">PROJECTS</a>
+            <a href="#" className="hover:text-[#D4AF37] transition-colors">OUR STORY</a>
+            <a href="#" className="hover:text-[#D4AF37] transition-colors">EXPERTISE</a>
+            <a href="#" className="hover:text-[#D4AF37] transition-colors">CONTACT</a>
+          </div>
+          <button className="bg-black text-white px-6 py-2.5 text-sm uppercase tracking-wider font-semibold hover:bg-[#D4AF37] transition-colors rounded-sm">
+            Book Priority Visit
+          </button>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <header className="relative h-[90vh] flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=80" alt="Luxury Home" className="w-full h-full object-cover scale-105 transform hover:scale-100 transition-transform duration-[20s]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-[#fafafa]"></div>
+        </div>
+        <div className="relative z-10 text-center px-4 max-w-4xl mt-16">
+          <span className="text-[#D4AF37] uppercase tracking-[0.3em] text-sm font-bold mb-4 block">Redefining Luxury Living</span>
+          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
+            Discover Your <br/> <span className="font-serif italic font-light">Masterpiece</span>
+          </h1>
+          <p className="text-gray-200 text-lg md:text-xl mb-10 font-light max-w-2xl mx-auto">
+            Exclusive residences crafted for the elite. Experience unparalleled architectural brilliance and world-class amenities.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button className="bg-[#D4AF37] text-white px-8 py-4 uppercase tracking-widest text-sm font-bold hover:bg-white hover:text-black transition-all duration-300 w-full sm:w-auto">
+              Explore Portfolio
+            </button>
+            <button 
+              onClick={() => document.getElementById('ai-chat-trigger').click()}
+              className="bg-black/50 backdrop-blur-sm border border-white/20 text-white px-8 py-4 uppercase tracking-widest text-sm font-bold hover:bg-white hover:text-black transition-all duration-300 w-full sm:w-auto flex items-center justify-center gap-2"
+            >
+              <Zap className="w-4 h-4 text-[#D4AF37]" /> Find My Match
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Featured Projects */}
+      <section className="py-24 px-6 max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-12">
+          <div>
+            <span className="text-[#D4AF37] uppercase tracking-widest text-xs font-bold mb-2 block">Curated Collection</span>
+            <h2 className="text-4xl font-bold">Featured Projects</h2>
+          </div>
+          <a href="#" className="text-sm font-semibold uppercase tracking-widest border-b border-black pb-1 hover:text-[#D4AF37] hover:border-[#D4AF37] transition-colors mt-4 md:mt-0">
+            View All Properties
+          </a>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {mockProjects.slice(0, 6).map((project) => (
+            <div 
+              key={project.id} 
+              className="group cursor-pointer bg-white border border-gray-100 hover:shadow-2xl transition-all duration-500 rounded-sm overflow-hidden"
+              onClick={() => onOpenProject(project)}
+            >
+              <div className="relative h-72 overflow-hidden">
+                <img src={project.image} alt={project.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-bold uppercase tracking-wider text-black">
+                  {project.status}
+                </div>
+                <div className="absolute bottom-4 left-4 flex gap-2">
+                   {project.amenities.slice(0,2).map(a => (
+                     <span key={a} className="bg-black/70 backdrop-blur-md text-white text-[10px] uppercase tracking-wider px-2 py-1 rounded-sm">{a}</span>
+                   ))}
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-xl font-bold">{project.name}</h3>
+                  <span className="text-[#D4AF37] font-semibold">{project.price}</span>
+                </div>
+                <p className="text-gray-500 text-sm mb-4 flex items-center gap-1">
+                  <MapPin className="w-4 h-4" /> {project.location}
+                </p>
+                <div className="flex items-center justify-between border-t border-gray-100 pt-4 text-sm">
+                  <span className="text-gray-600">{project.type}</span>
+                  <span className="text-gray-600">{project.beds}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Trust Section */}
+      <section className="bg-black text-white py-24 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 text-center">
+          <div>
+            <div className="text-[#D4AF37] text-5xl font-light mb-4">25+</div>
+            <div className="uppercase tracking-widest text-xs text-gray-400">Years of Excellence</div>
+          </div>
+          <div>
+            <div className="text-[#D4AF37] text-5xl font-light mb-4">15k</div>
+            <div className="uppercase tracking-widest text-xs text-gray-400">Happy Families</div>
+          </div>
+          <div>
+            <div className="text-[#D4AF37] text-5xl font-light mb-4">50+</div>
+            <div className="uppercase tracking-widest text-xs text-gray-400">Awards Won</div>
+          </div>
+          <div>
+            <div className="text-[#D4AF37] text-5xl font-light mb-4">10M</div>
+            <div className="uppercase tracking-widest text-xs text-gray-400">Sq.Ft. Delivered</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-[#111] text-gray-400 py-12 px-6 text-sm text-center">
+        <p>© 2026 EstateFlow AI Luxury Real Estate. All rights reserved.</p>
+        <p className="mt-2 text-xs">Note: This is a simulated environment for demonstration purposes.</p>
+      </footer>
+    </div>
+  );
+};
+
+// 2. PROJECT DETAIL VIEW (Deep dive)
+const ProjectDetailView = ({ project, onBack }) => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-white">
+      <nav className="fixed w-full bg-white z-40 border-b border-gray-100 h-20 flex items-center px-6">
+        <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider hover:text-[#D4AF37] transition-colors">
+          <ArrowRight className="w-4 h-4 rotate-180" /> Back to Portfolio
+        </button>
+      </nav>
+
+      <div className="pt-20">
+        <div className="w-full h-[60vh] relative">
+           <img src={project.image} alt={project.name} className="w-full h-full object-cover" />
+           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end">
+             <div className="max-w-7xl mx-auto px-6 pb-12 w-full text-white">
+                <span className="bg-[#D4AF37] text-black text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-sm mb-4 inline-block">{project.status}</span>
+                <h1 className="text-5xl md:text-7xl font-bold mb-4">{project.name}</h1>
+                <p className="text-xl flex items-center gap-2"><MapPin /> {project.location}</p>
+             </div>
+           </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-3 gap-16">
+          <div className="md:col-span-2">
+            <h2 className="text-3xl font-bold mb-6">About the Property</h2>
+            <p className="text-gray-600 leading-relaxed text-lg mb-12">{project.description}</p>
+            
+            <h3 className="text-2xl font-bold mb-6">Project Specifications</h3>
+            <div className="grid grid-cols-2 gap-y-8 gap-x-4 mb-12">
+              <div>
+                <span className="block text-gray-400 text-sm uppercase tracking-wider mb-1">Typology</span>
+                <span className="font-semibold text-lg">{project.beds}</span>
+              </div>
+              <div>
+                <span className="block text-gray-400 text-sm uppercase tracking-wider mb-1">Area</span>
+                <span className="font-semibold text-lg">{project.sqft}</span>
+              </div>
+              <div>
+                <span className="block text-gray-400 text-sm uppercase tracking-wider mb-1">Starting Price</span>
+                <span className="font-semibold text-lg">{project.price}</span>
+              </div>
+              <div>
+                <span className="block text-gray-400 text-sm uppercase tracking-wider mb-1">Developer</span>
+                <span className="font-semibold text-lg">{project.builder}</span>
+              </div>
+            </div>
+
+            <h3 className="text-2xl font-bold mb-6">Premium Amenities</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {project.amenities.map(a => (
+                <div key={a} className="flex items-center gap-2 bg-gray-50 p-4 border border-gray-100 rounded-sm">
+                  <CheckCircle className="w-5 h-5 text-[#D4AF37]" />
+                  <span className="font-medium text-sm">{a}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="sticky top-28 bg-gray-50 p-8 border border-gray-200 rounded-sm">
+              <h3 className="text-2xl font-bold mb-2">Interested?</h3>
+              <p className="text-gray-500 text-sm mb-6">Connect with our AI Sales Expert instantly to get floor plans, precise pricing, and book a priority site visit.</p>
+              
+              <button 
+                onClick={() => document.getElementById('ai-chat-trigger').click()}
+                className="w-full bg-black text-white py-4 font-bold uppercase tracking-wider hover:bg-[#D4AF37] transition-colors mb-4 flex justify-center items-center gap-2"
+              >
+                <MessageSquare className="w-5 h-5" /> Chat with Expert
+              </button>
+              
+              <button className="w-full bg-white text-black border border-black py-4 font-bold uppercase tracking-wider hover:bg-gray-100 transition-colors flex justify-center items-center gap-2">
+                <Calendar className="w-5 h-5" /> Schedule Visit
+              </button>
+              
+              <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+                <span className="text-xs text-gray-400 uppercase tracking-widest block mb-2">Or call directly</span>
+                <span className="font-bold text-lg">+91 1800-ESTATE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 3. AI CHAT WIDGET (The Core Value Prop)
+const AIChatWidget = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { sender: 'ai', text: 'Hello! I am Maya, your AI luxury real estate concierge. Are you looking for a specific project, or would you like me to recommend something based on your budget?' }
+  ]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [leadStage, setLeadStage] = useState(0); // 0: greeting, 1: budget, 2: phone, 3: booked
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]);
+
+  const handleSend = (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    const userMsg = input;
+    setMessages(prev => [...prev, { sender: 'user', text: userMsg }]);
+    setInput('');
+    setIsTyping(true);
+
+    // Simulate AI response delay and logic
+    setTimeout(() => {
+      let aiResponse = "";
+      let newStage = leadStage;
+
+      if (leadStage === 0) {
+        aiResponse = "Excellent. To find the perfect match, could you share your approximate budget range? (e.g., 2-5 Cr, 10+ Cr)";
+        newStage = 1;
+      } else if (leadStage === 1) {
+        aiResponse = "Got it. We have 3 premium properties matching that profile, including 'The Aurelia'. Would you like to schedule a VIP site visit this weekend? Please share your phone number to coordinate.";
+        newStage = 2;
+      } else if (leadStage === 2) {
+        aiResponse = "Perfect, I've secured a slot for you. A senior relationship manager will text you the details shortly on WhatsApp. Have a great day!";
+        newStage = 3;
+        // In a real app, this triggers the backend CRM integration here.
+      } else {
+        aiResponse = "If you have any other questions about floor plans or legal approvals, feel free to ask!";
+      }
+
+      setMessages(prev => [...prev, { sender: 'ai', text: aiResponse }]);
+      setIsTyping(false);
+      setLeadStage(newStage);
+    }, 1500);
+  };
+
+  return (
+    <>
+      {/* Trigger Button */}
+      <button 
+        id="ai-chat-trigger"
+        onClick={() => setIsOpen(true)}
+        className={`fixed bottom-6 right-6 bg-black text-white p-4 rounded-full shadow-2xl hover:scale-105 transition-transform z-50 flex items-center justify-center border-2 border-[#D4AF37] ${isOpen ? 'hidden' : 'block'}`}
+      >
+        <div className="absolute -top-2 -right-2 flex h-4 w-4">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-4 w-4 bg-[#D4AF37]"></span>
+        </div>
+        <MessageSquare className="w-6 h-6" />
+      </button>
+
+      {/* Chat Window */}
+      <div className={`fixed bottom-6 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 flex flex-col overflow-hidden transition-all duration-300 origin-bottom-right ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`} style={{ height: '550px' }}>
+        {/* Header */}
+        <div className="bg-black text-white p-4 flex justify-between items-center relative overflow-hidden">
+          <div cl
