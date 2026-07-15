@@ -3,179 +3,267 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EstateFlow AI - Premium Sales Demo</title>
-    
-    <!-- Tailwind CSS -->
+    <title>EstateFlow AI | The AI Real Estate Sales System</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel for in-browser JSX compilation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .font-serif { font-family: 'Playfair Display', serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
         
-        /* Custom scrollbar for chat */
-        .chat-scroll::-webkit-scrollbar { width: 4px; }
-        .chat-scroll::-webkit-scrollbar-track { background: transparent; }
-        .chat-scroll::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+        :root {
+            --gold: #D4AF37;
+            --black: #0a0a0a;
+            --white: #ffffff;
+            --gray: #f9fafb;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--gray); color: var(--black); }
+        h1, h2, h3, .font-serif { font-family: 'Playfair Display', serif; }
+        
+        .gold-text { color: var(--gold); }
+        .bg-gold { background-color: var(--gold); }
+        .border-gold { border-color: var(--gold); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+        .hidden-view { display: none !important; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Sales Demo HUD */
+        #demo-hud {
+            backdrop-filter: blur(10px);
+            box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
-<body class="bg-gray-50 selection:bg-[#D4AF37] selection:text-white">
-    <div id="root"></div>
+<body class="antialiased selection:bg-[#D4AF37] selection:text-white flex overflow-hidden h-screen">
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+    <!-- ========================================== -->
+    <!-- SALES REP HUD (Live Demo Tracker)          -->
+    <!-- ========================================== -->
+    <aside id="demo-hud" class="w-80 bg-black text-white h-screen border-r border-gray-800 flex flex-col z-50 transition-all duration-300">
+        <div class="p-6 border-b border-gray-800">
+            <div class="flex items-center gap-2 mb-2">
+                <i data-lucide="cpu" class="text-[#D4AF37] w-6 h-6"></i>
+                <span class="text-xl font-bold tracking-widest uppercase">EstateFlow <span class="text-[#D4AF37]">AI</span></span>
+            </div>
+            <p class="text-xs text-gray-400">Live Pitch Tracking Panel</p>
+        </div>
+        
+        <div class="p-6 flex-1 overflow-y-auto">
+            <div class="mb-6">
+                <h3 class="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Live Visitor Intent</h3>
+                <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+                    <div class="flex justify-between items-end mb-2">
+                        <span class="text-sm font-semibold">Lead Score</span>
+                        <span id="hud-score" class="text-3xl font-bold text-[#D4AF37]">0</span>
+                    </div>
+                    <div class="w-full bg-gray-800 rounded-full h-1.5 mb-2">
+                        <div id="hud-score-bar" class="bg-[#D4AF37] h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="hud-status" class="text-xs font-bold text-blue-400 uppercase tracking-wider">Cold</span>
+                </div>
+            </div>
 
-        // --- SVG ICON COMPONENT (Replaces external library for local support) ---
-        const Icon = ({ name, className = "w-6 h-6" }) => {
-            const icons = {
-                Building: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>,
-                MapPin: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
-                Zap: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
-                CheckCircle: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-                MessageSquare: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-                Calendar: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
-                ArrowRight: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
-                X: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
-                ShieldCheck: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>,
-                Send: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
-                LayoutDashboard: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
-                Users: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-                Activity: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-                BarChart3: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><rect width="4" height="7" x="7" y="14" rx="1"/><rect width="4" height="12" x="15" y="9" rx="1"/></svg>,
-                Settings: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>,
-                Bell: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
-                Smartphone: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>,
-                TrendingUp: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
-                Mail: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
-                Filter: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>,
-                Search: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
-                Phone: <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            };
-            return icons[name] || null;
-        };
+            <div class="mb-6">
+                <h3 class="text-[10px] uppercase tracking-widest text-gray-500 mb-2">Behavior Tracking Log</h3>
+                <div id="hud-logs" class="space-y-3">
+                    <div class="text-xs text-gray-400 flex items-start gap-2"><i data-lucide="eye" class="w-4 h-4 text-gray-500 mt-0.5"></i> Visitor landed on Home Page</div>
+                </div>
+            </div>
+        </div>
 
-        // --- MOCK DATA ---
-        const generateProjects = () => {
-            const types = ['Luxury Villa', 'Penthouse', 'Premium Apartment', 'Estate'];
-            const statuses = ['Under Construction', 'Ready to Move', 'Pre-Launch'];
-            const locations = ['Banjara Hills', 'Jubilee Hills', 'Financial District', 'Hitec City', 'Kondapur', 'Gachibowli'];
-            const amenities = ['Infinity Pool', 'Private Elevator', 'Smart Home', 'Clubhouse', 'Spa', 'Helipad'];
-            const baseNames = ['The Aurelia', 'Crown', 'Oasis', 'Lumina', 'Vertex', 'Solitaire', 'The Reserve'];
+        <div class="p-4 border-t border-gray-800 space-y-2">
+            <button onclick="navigate('home')" class="w-full bg-gray-900 hover:bg-gray-800 text-white py-2 px-4 rounded text-sm text-left flex justify-between items-center transition-colors">
+                1. Buyer Website <i data-lucide="external-link" class="w-4 h-4 text-gray-500"></i>
+            </button>
+            <button onclick="navigate('admin')" class="w-full bg-[#D4AF37] hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded text-sm text-left flex justify-between items-center transition-colors shadow-[0_0_15px_rgba(212,175,55,0.3)]">
+                2. Show CRM Handover <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </aside>
+
+    <!-- ========================================== -->
+    <!-- MAIN APPLICATION WINDOW                    -->
+    <!-- ========================================== -->
+    <main class="flex-1 relative h-screen overflow-y-auto overflow-x-hidden bg-white" id="main-scroll-area" onscroll="trackScroll()">
+        
+        <!-- BUYER NAVIGATION -->
+        <nav id="buyer-nav" class="absolute w-full z-40 bg-white/95 backdrop-blur border-b border-gray-100 transition-all duration-300">
+            <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="navigate('home')">
+                    <i data-lucide="building" class="text-[#D4AF37] w-8 h-8"></i>
+                    <span class="text-2xl font-bold tracking-tight text-black">AURELIA <span class="text-[#D4AF37] font-light">ESTATES</span></span>
+                </div>
+                <div class="hidden md:flex items-center gap-8 text-sm font-medium tracking-wide text-gray-800">
+                    <a href="#" onclick="navigate('home')" class="hover:text-[#D4AF37] transition-colors">HOME</a>
+                    <a href="#" onclick="navigate('projects')" class="hover:text-[#D4AF37] transition-colors">PROJECTS</a>
+                    <a href="#" onclick="navigate('about')" class="hover:text-[#D4AF37] transition-colors">ABOUT</a>
+                    <a href="#" class="hover:text-[#D4AF37] transition-colors">CONTACT</a>
+                </div>
+                <button onclick="trackAction('Clicked Book Visit CTA', 10); openChat();" class="bg-black text-white px-6 py-2.5 text-sm uppercase tracking-wider font-semibold hover:bg-[#D4AF37] transition-colors">
+                    Schedule Visit
+                </button>
+            </div>
+        </nav>
+
+        <!-- VIEWS -->
+        <div id="views-container" class="pt-20 relative">
             
-            return baseNames.map((name, i) => {
-                const type = types[i % types.length];
-                return {
-                    id: `proj-${i + 1}`,
-                    name: `${name} ${type.includes('Villa') ? 'Estates' : 'Residences'}`,
-                    type: type,
-                    price: `₹${(Math.random() * 10 + 2).toFixed(1)} Cr - ₹${(Math.random() * 15 + 12).toFixed(1)} Cr`,
-                    location: locations[i % locations.length],
-                    status: statuses[i % statuses.length],
-                    beds: `${Math.floor(Math.random() * 3) + 3} & ${Math.floor(Math.random() * 3) + 4} BHK`,
-                    sqft: `${Math.floor(Math.random() * 3000) + 2500} - ${Math.floor(Math.random() * 5000) + 6000} Sq.Ft.`,
-                    image: `https://images.unsplash.com/photo-${[
-                        '1600596542815-ffad4c1539a9', '1512917774080-9991f1c4c750', '1613490453576-6997428f5229',
-                        '1600607687939-ce8a6c25118c', '1600585154340-be6161a56a0c', '1512917774080-9991f1c4c750',
-                        '1600596542815-ffad4c1539a9'
-                    ][i % 7]}?auto=format&fit=crop&w=800&q=80`,
-                    amenities: [amenities[i % amenities.length], amenities[(i + 1) % amenities.length], amenities[(i + 2) % amenities.length]],
-                    description: `Experience unparalleled luxury at ${name}. Designed for the elite, offering breathtaking views and world-class amenities in the heart of the city.`,
-                    builder: i % 2 === 0 ? 'Prestige Group' : 'Lodha Developers'
-                };
-            });
-        };
-
-        const mockProjects = generateProjects();
-
-        const mockLeads = [
-            { id: 'L-101', name: 'Vikram Desai', phone: '+91 98765 43210', email: 'vikram.d@email.com', intent: 'High', score: 92, project: 'The Aurelia Residences', budget: '₹5-7 Cr', timeline: 'Immediate', status: 'Meeting Booked', aiSummary: 'User explored 3 properties. High interest in 4BHK. Ready to move. Booked site visit for Saturday via AI assistant.', lastActive: '2 mins ago' },
-            { id: 'L-102', name: 'Ananya Sharma', phone: '+91 91234 56789', email: 'ananya.s@email.com', intent: 'Medium', score: 65, project: 'Crown Estates', budget: '₹3-4 Cr', timeline: '3-6 Months', status: 'Qualified', aiSummary: 'Asked about ROI and rental yield. Family of 4. Needs near International School. Transferred to WhatsApp channel.', lastActive: '1 hr ago' },
-            { id: 'L-103', name: 'Rajiv Menon', phone: '+91 99988 77766', email: 'rajiv.invest@email.com', intent: 'High', score: 88, project: 'Oasis Residences', budget: '₹10+ Cr', timeline: 'Flexible', status: 'Hot Lead', aiSummary: 'NRI investor. Looking for premium penthouse. Discussed payment plans with AI. Scheduled zoom call.', lastActive: '3 hrs ago' },
-            { id: 'L-104', name: 'Priya Verma', phone: 'Hidden', email: 'Hidden', intent: 'Low', score: 24, project: 'Lumina Residences', budget: 'Unknown', timeline: 'Exploring', status: 'Nurturing', aiSummary: 'Browsed gallery for 5 mins. Asked AI about possession date. Did not share contact info. Retargeting active.', lastActive: '1 day ago' },
-            { id: 'L-105', name: 'Karan Patel', phone: '+91 98888 11111', email: 'k.patel@email.com', intent: 'High', score: 95, project: 'Vertex Estates', budget: '₹8-10 Cr', timeline: 'Immediate', status: 'Negotiation', aiSummary: 'Repeat visitor (4th time). Spent 20 mins on pricing page. AI answered Vastu queries. Requested call back.', lastActive: '15 mins ago' },
-        ];
-
-        const mockAnalytics = { activeVisitors: 42, aiConversations: 128, qualifiedLeads: 35, appointmentsBooked: 12, conversionRate: '27.3%' };
-
-        // --- COMPONENTS ---
-
-        // 1. BUYER VIEW
-        const BuyerView = ({ onOpenProject }) => {
-            return (
-                <div className="min-h-screen bg-[#fafafa]">
-                    <nav className="fixed w-full bg-white/90 backdrop-blur-md z-40 border-b border-gray-100 transition-all duration-300">
-                        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Icon name="Building" className="text-[#D4AF37] w-8 h-8" />
-                                <span className="text-2xl font-bold tracking-tight">ESTATE<span className="text-[#D4AF37]">FLOW</span></span>
-                            </div>
-                            <div className="hidden md:flex items-center gap-8 text-sm font-medium tracking-wide">
-                                <a href="#" className="hover:text-[#D4AF37] transition-colors">PROJECTS</a>
-                                <a href="#" className="hover:text-[#D4AF37] transition-colors">OUR STORY</a>
-                                <a href="#" className="hover:text-[#D4AF37] transition-colors">EXPERTISE</a>
-                            </div>
-                            <button className="bg-black text-white px-6 py-2.5 text-sm uppercase tracking-wider font-semibold hover:bg-[#D4AF37] transition-colors rounded-sm">
-                                Book Priority Visit
+            <!-- 1. HOME VIEW -->
+            <div id="view-home" class="fade-in pb-20">
+                <!-- Hero -->
+                <header class="relative h-[85vh] flex items-center justify-center overflow-hidden">
+                    <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=80" class="absolute inset-0 w-full h-full object-cover scale-105" />
+                    <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-white"></div>
+                    <div class="relative z-10 text-center px-4 max-w-4xl mt-16">
+                        <span class="text-[#D4AF37] uppercase tracking-[0.3em] text-sm font-bold mb-4 block">Premium Property Portfolio</span>
+                        <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">Elevate Your Standard <br/> <span class="font-serif italic font-light">of Living</span></h1>
+                        <p class="text-gray-200 text-lg md:text-xl mb-10 font-light max-w-2xl mx-auto">Experience unparalleled architectural brilliance and world-class amenities designed for the elite.</p>
+                        <div class="flex flex-col sm:flex-row justify-center gap-4">
+                            <button onclick="navigate('projects')" class="bg-[#D4AF37] text-white px-8 py-4 uppercase tracking-widest text-sm font-bold hover:bg-black transition-colors w-full sm:w-auto">Explore Projects</button>
+                            <button onclick="trackAction('Clicked Talk to AI', 15); openChat();" class="bg-black/50 backdrop-blur border border-white/20 text-white px-8 py-4 uppercase tracking-widest text-sm font-bold hover:bg-white hover:text-black transition-colors w-full sm:w-auto flex items-center justify-center gap-2">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-[#D4AF37]"></i> Talk to AI Concierge
                             </button>
                         </div>
-                    </nav>
+                    </div>
+                </header>
 
-                    <header className="relative h-[90vh] flex items-center justify-center overflow-hidden">
-                        <div className="absolute inset-0 z-0">
-                            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=80" alt="Luxury Home" className="w-full h-full object-cover scale-105 transform hover:scale-100 transition-transform duration-[20s]" />
-                            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-[#fafafa]"></div>
+                <!-- Premium Property Banner -->
+                <div class="bg-black text-white py-12 border-b border-gray-800">
+                    <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-gray-800">
+                        <div><div class="text-3xl font-serif text-[#D4AF37] mb-1">15+</div><div class="text-xs uppercase tracking-widest text-gray-400">Luxury Projects</div></div>
+                        <div><div class="text-3xl font-serif text-[#D4AF37] mb-1">₹5Cr+</div><div class="text-xs uppercase tracking-widest text-gray-400">Starting Price</div></div>
+                        <div><div class="text-3xl font-serif text-[#D4AF37] mb-1">2026</div><div class="text-xs uppercase tracking-widest text-gray-400">Possession Target</div></div>
+                        <div><div class="text-3xl font-serif text-[#D4AF37] mb-1">100%</div><div class="text-xs uppercase tracking-widest text-gray-400">Vastu Compliant</div></div>
+                    </div>
+                </div>
+
+                <!-- Featured Projects -->
+                <section class="py-24 px-6 max-w-7xl mx-auto">
+                    <div class="flex justify-between items-end mb-12">
+                        <div>
+                            <span class="text-[#D4AF37] uppercase tracking-widest text-xs font-bold mb-2 block">Our Masterpieces</span>
+                            <h2 class="text-4xl font-serif font-bold">Featured Projects</h2>
                         </div>
-                        <div className="relative z-10 text-center px-4 max-w-4xl mt-16">
-                            <span className="text-[#D4AF37] uppercase tracking-[0.3em] text-sm font-bold mb-4 block">Redefining Luxury Living</span>
-                            <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-                                Discover Your <br/> <span className="font-serif italic font-light">Masterpiece</span>
-                            </h1>
-                            <p className="text-gray-200 text-lg md:text-xl mb-10 font-light max-w-2xl mx-auto">
-                                Exclusive residences crafted for the elite. Experience unparalleled architectural brilliance and world-class amenities.
-                            </p>
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                                <button className="bg-[#D4AF37] text-white px-8 py-4 uppercase tracking-widest text-sm font-bold hover:bg-white hover:text-black transition-all duration-300 w-full sm:w-auto">
-                                    Explore Portfolio
-                                </button>
-                                <button onClick={() => document.getElementById('ai-chat-trigger').click()} className="bg-black/50 backdrop-blur-sm border border-white/20 text-white px-8 py-4 uppercase tracking-widest text-sm font-bold hover:bg-white hover:text-black transition-all duration-300 w-full sm:w-auto flex items-center justify-center gap-2">
-                                    <Icon name="Zap" className="w-4 h-4 text-[#D4AF37]" /> Find My Match
-                                </button>
+                        <button onclick="navigate('projects')" class="text-sm font-bold uppercase tracking-widest border-b border-black pb-1 hover:text-[#D4AF37] hover:border-[#D4AF37] transition-colors">View All 15 Projects</button>
+                    </div>
+                    <div id="featured-projects-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8"></div>
+                </section>
+
+                <!-- Amenities -->
+                <section class="bg-gray-100 py-24 px-6">
+                    <div class="max-w-7xl mx-auto text-center">
+                        <span class="text-[#D4AF37] uppercase tracking-widest text-xs font-bold mb-2 block">World Class</span>
+                        <h2 class="text-4xl font-serif font-bold mb-16">Signature Amenities</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-12">
+                            <div class="flex flex-col items-center"><i data-lucide="waves" class="w-12 h-12 text-gray-400 mb-4"></i><h3 class="font-bold">Infinity Pools</h3></div>
+                            <div class="flex flex-col items-center"><i data-lucide="shield-check" class="w-12 h-12 text-gray-400 mb-4"></i><h3 class="font-bold">5-Tier Security</h3></div>
+                            <div class="flex flex-col items-center"><i data-lucide="dumbbell" class="w-12 h-12 text-gray-400 mb-4"></i><h3 class="font-bold">Luxury Spa & Gym</h3></div>
+                            <div class="flex flex-col items-center"><i data-lucide="trees" class="w-12 h-12 text-gray-400 mb-4"></i><h3 class="font-bold">Landscaped Gardens</h3></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Map & Testimonials -->
+                <section class="py-24 px-6 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16">
+                    <div>
+                        <h2 class="text-3xl font-serif font-bold mb-8">What Our Residents Say</h2>
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 border border-gray-100 shadow-sm">
+                                <div class="flex text-[#D4AF37] mb-3"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+                                <p class="text-gray-600 italic mb-4">"The AI agent helped me find the perfect penthouse in minutes. The entire booking process was seamless and luxurious from start to finish."</p>
+                                <p class="text-sm font-bold">- Rajesh Singhania</p>
+                            </div>
+                            <div class="bg-white p-6 border border-gray-100 shadow-sm">
+                                <div class="flex text-[#D4AF37] mb-3"><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i><i data-lucide="star" class="w-4 h-4 fill-current"></i></div>
+                                <p class="text-gray-600 italic mb-4">"Aurelia Estates redefined our standard of living. The attention to detail and prime location are unmatched."</p>
+                                <p class="text-sm font-bold">- Priya & Amit Verma</p>
                             </div>
                         </div>
-                    </header>
-
-                    <section className="py-24 px-6 max-w-7xl mx-auto">
-                        <div className="flex flex-col md:flex-row justify-between items-end mb-12">
-                            <div>
-                                <span className="text-[#D4AF37] uppercase tracking-widest text-xs font-bold mb-2 block">Curated Collection</span>
-                                <h2 className="text-4xl font-bold">Featured Projects</h2>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-serif font-bold mb-8">Prime Locations</h2>
+                        <div class="w-full h-[300px] bg-gray-200 border border-gray-300 flex items-center justify-center relative overflow-hidden group">
+                            <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80" class="absolute inset-0 w-full h-full object-cover opacity-50 filter grayscale mix-blend-multiply" />
+                            <div class="relative z-10 text-center">
+                                <i data-lucide="map-pin" class="w-10 h-10 text-[#D4AF37] mx-auto mb-2 drop-shadow-md"></i>
+                                <span class="font-bold text-lg bg-white/90 px-4 py-1">View Interactive Map</span>
                             </div>
                         </div>
+                    </div>
+                </section>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                            {mockProjects.slice(0, 6).map((project) => (
-                                <div key={project.id} className="group cursor-pointer bg-white border border-gray-100 hover:shadow-2xl transition-all duration-500 rounded-sm overflow-hidden" onClick={() => onOpenProject(project)}>
-                                    <div className="relative h-72 overflow-hidden">
-                                        <img src={project.image} alt={project.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                        <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-bold uppercase tracking-wider text-black">
-                                            {project.status}
-                                        </div>
-                                    </div>
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="text-xl font-bold">{project.name}</h3>
-                                            <span className="text-[#D4AF37] font-semibold">{project.price}</span>
-                                        </div>
-                                        <p className="text-gray-500 text-sm mb-4 flex items-center gap-1">
-                                            <Icon name="MapPin" className="w-4 h-4" /> {project.location}
-                                        </p>
-                                        <div className="flex items-center justify-between border-t border-gray-100 pt-4 text-sm">
-                                            <span className="text-gray-600">{project.type}</span>
-                                            <span className
+                <!-- FAQ -->
+                <section class="bg-black text-white py-24 px-6">
+                    <div class="max-w-3xl mx-auto">
+                        <h2 class="text-3xl font-serif font-bold mb-12 text-center">Frequently Asked Questions</h2>
+                        <div class="space-y-4" id="faq-container">
+                            <div class="border border-gray-800 p-4 cursor-pointer hover:border-gray-600 transition-colors" onclick="trackAction('Viewed FAQ: Loan Requirements', 5)">
+                                <h3 class="font-bold text-lg mb-2 flex justify-between">What are the loan requirements? <i data-lucide="chevron-down" class="w-5 h-5 text-[#D4AF37]"></i></h3>
+                                <p class="text-gray-400 text-sm hidden">We are pre-approved by all major national banks including SBI, HDFC, and ICICI with up to 80% funding available based on eligibility.</p>
+                            </div>
+                            <div class="border border-gray-800 p-4 cursor-pointer hover:border-gray-600 transition-colors" onclick="trackAction('Viewed FAQ: Possession Timeline', 5)">
+                                <h3 class="font-bold text-lg mb-2 flex justify-between">What is the possession timeline? <i data-lucide="chevron-down" class="w-5 h-5 text-[#D4AF37]"></i></h3>
+                                <p class="text-gray-400 text-sm hidden">Our ready-to-move projects are available immediately. Under-construction projects have targeted completion dates between Dec 2026 and March 2028.</p>
+                            </div>
+                        </div>
+                        <div class="text-center mt-8">
+                            <p class="text-gray-400 text-sm mb-4">Have more questions?</p>
+                            <button onclick="openChat()" class="text-[#D4AF37] font-bold uppercase tracking-widest text-sm border-b border-[#D4AF37] pb-1">Ask our AI Assistant</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 2. PROJECTS LIST VIEW -->
+            <div id="view-projects" class="hidden-view fade-in py-12 px-6 max-w-7xl mx-auto">
+                <div class="text-center mb-16">
+                    <h1 class="text-5xl font-serif font-bold mb-4">Our Portfolio</h1>
+                    <p class="text-gray-500 max-w-2xl mx-auto">Explore our exclusive collection of 15 premium real estate developments.</p>
+                </div>
+                <div id="full-projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+            </div>
+
+            <!-- 3. PROJECT DETAIL VIEW -->
+            <div id="view-project-detail" class="hidden-view fade-in pb-20">
+                <div id="project-detail-content"></div>
+            </div>
+
+            <!-- 4. ABOUT VIEW -->
+            <div id="view-about" class="hidden-view fade-in py-24 px-6 max-w-4xl mx-auto text-center">
+                <h1 class="text-5xl font-serif font-bold mb-8">Why Choose Us</h1>
+                <p class="text-xl text-gray-600 mb-12 leading-relaxed">Aurelia Estates has been at the forefront of luxury real estate development for over two decades. We don't just build homes; we curate lifestyles for those who appreciate the finest things in life.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+                    <div class="p-6 bg-gray-50 border border-gray-100">
+                        <i data-lucide="award" class="w-10 h-10 text-[#D4AF37] mb-4"></i>
+                        <h3 class="font-bold text-xl mb-2">Award Winning</h3>
+                        <p class="text-sm text-gray-500">Recognized globally for architectural excellence and sustainable building practices.</p>
+                    </div>
+                    <div class="p-6 bg-gray-50 border border-gray-100">
+                        <i data-lucide="clock" class="w-10 h-10 text-[#D4AF37] mb-4"></i>
+                        <h3 class="font-bold text-xl mb-2">On-Time Delivery</h3>
+                        <p class="text-sm text-gray-500">A flawless track record of delivering our premium projects on or before the committed timeline.</p>
+                    </div>
+                    <div class="p-6 bg-gray-50 border border-gray-100">
+                        <i data-lucide="shield" class="w-10 h-10 text-[#D4AF37] mb-4"></i>
+                        <h3 class="font-bold text-xl mb-2">Unmatched Quality</h3>
+                        <p class="text-sm text-gray-500">Sourcing only the finest materials globally to construct enduring legacies.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. ADMIN/CRM VIEW (The actual product being sold) -->
+            <div id="view-admin" class="hidden-view fade-in bg-gray-100 min-h-[calc(100vh-80px)] -mt-20 z-50 relative">
+                <!-- Admin Header -->
+                <header class="bg-black text-white h-16 flex items-center justify-between px-6 sticky top-0 z-10">
+                    <div class="flex items-center gap-4">
+                        <span class="text-xl font-bold tracking-widest uppercase text-white">ESTATEFLOW <span class="text-[#D4AF37]">CRM</span></span>
+                        <span class="bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded animate-pulse">Live Demo Data</span>
+                    </div>
+                    <div class="flex gap-4">
+                     
