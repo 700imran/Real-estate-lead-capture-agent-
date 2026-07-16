@@ -33,7 +33,7 @@ type Config struct {
 func loadConfig() Config {
 	baseURL := os.Getenv("OPENAI_BASE_URL")
 	if baseURL == "" {
-		baseURL = "https://openrouter.ai/api/v1" // Default to OpenRouter
+		baseURL = "https://openrouter.ai/workspaces/default/keys/9544d0c7e22d9e13c8b90c7670e3a7e365d0eb2d40ec8e579078ddc54fe1425c" // Default to OpenRouter
 	}
 	
 	// Check for OpenRouter key first, fallback to OpenAI key if needed
