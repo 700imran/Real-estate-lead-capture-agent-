@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#17140F">
+<title>Sales dashboard — Kathat Estate</title>
+<meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+<div id="dash-login" class="dash-login">
+  <form id="dash-login-form">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <img src="assets/logo/mark.svg" alt="" width="32" height="32">
+      <span style="font-family:var(--font-display);font-style:italic;font-size:1.15rem;">Kathat Estate</span>
+    </div>
+    <h1 style="font-size:1.4rem;margin-top:14px;">Sales dashboard</h1>
+    <p style="color:rgba(23,20,15,.5);font-size:.9rem;margin-top:4px;">Sign in to see live visitors and leads.</p>
+    <label>Email
+      <input id="dash-email" type="email" required value="admin@example.com">
+    </label>
+    <label>Password
+      <input id="dash-password" type="password" required>
+    </label>
+    <p id="dash-login-error" class="error" hidden>Incorrect email or password.</p>
+    <button type="submit" class="btn btn--full" style="background:#17140F;color:#FBFAF6;margin-top:20px;">Sign in</button>
+  </form>
+</div>
+
+<div id="dash-main" class="dash-wrap" hidden>
+  <div class="dash-head">
+    <div>
+      <h1 style="font-size:1.8rem;">Sales dashboard</h1>
+      <p class="dash-status"><span id="dash-status-dot" class="dash-dot"></span><span id="dash-status-text">Connecting…</span></p>
+    </div>
+    <button id="dash-signout" class="btn" style="border:1px solid rgba(23,20,15,.15);">Sign out</button>
+  </div>
+
+  <div class="dash-stats">
+    <div class="dash-stat"><div class="dash-stat__value" id="stat-live">—</div><div class="dash-stat__label">Live visitors</div></div>
+    <div class="dash-stat"><div class="dash-stat__value" id="stat-qualified">—</div><div class="dash-stat__label">Qualified leads</div></div>
+    <div class="dash-stat"><div class="dash-stat__value" id="stat-total">—</div><div class="dash-stat__label">Total leads</div></div>
+    <div class="dash-stat"><div class="dash-stat__value" id="stat-stages">—</div><div class="dash-stat__label">Pipeline stages</div></div>
+  </div>
+
+  <div class="dash-grid">
+    <div>
+      <h2 style="font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(23,20,15,.5);margin-bottom:12px;">Leads</h2>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead><tr><th>Contact</th><th>Source</th><th>Score</th><th>Status</th></tr></thead>
+          <tbody id="leads-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h2 style="font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(23,20,15,.5);margin-bottom:12px;">Live activity</h2>
+      <div class="live-feed" id="live-feed"><p class="empty" style="color:rgba(23,20,15,.4);font-size:.9rem;">Waiting for activity…</p></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/config.js"></script>
+<script src="assets/dashboard.js" defer></script>
+<script src="assets/interactions.js" defer></script>
+
+</body>
+</html>
